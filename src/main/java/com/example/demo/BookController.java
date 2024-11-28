@@ -12,6 +12,8 @@ import dev.langchain4j.model.openai.OpenAiChatModelName;
 import dev.langchain4j.rag.content.retriever.EmbeddingStoreContentRetriever;
 import dev.langchain4j.service.AiServices;
 import dev.langchain4j.store.embedding.inmemory.InMemoryEmbeddingStore;
+import io.github.cdimascio.dotenv.Dotenv;
+import io.grpc.internal.JsonUtil;
 import org.codelibs.jhighlight.fastutil.Hash;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -32,43 +34,15 @@ public class BookController {
     String chat(String userMessage);
   }
 
+  private final String apiKey = Dotenv.configure().load().get("OPENAI_API_KEY");
+
   private final BookRepository bookRepository;
 
   private final Map<String, Map<String, Assistant>> assistants = new HashMap<>();
 
   public BookController(BookRepository bookRepository) {
     this.bookRepository = bookRepository;
-  }
-
-  @GetMapping("/getDirectory")
-  @ResponseBody
-  @CrossOrigin(origins = "*")
-  public String getDirectory() {
-    return System.getProperty("user.dir");
-  }
-
-  @GetMapping("/getDirectories")
-  @ResponseBody
-  @CrossOrigin(origins = "*")
-  public List<String> getDirectories() {
-    File[] directories = new File(System.getProperty("user.dir")).listFiles(File::isDirectory);
-    List<String> names = new ArrayList<>();
-    for(File directory : directories) {
-      names.add(directory.getName());
-    }
-    return names;
-  }
-
-  @GetMapping("/getFiles")
-  @ResponseBody
-  @CrossOrigin(origins = "*")
-  public List<String> getFiles() {
-    File[] files = new File(System.getProperty("user.dir")).listFiles(File::isFile);
-    List<String> names = new ArrayList<>();
-    for(File file : files) {
-      names.add(file.getName());
-    }
-    return names;
+    System.out.println(apiKey);
   }
 
   @GetMapping("/getYears")
@@ -109,8 +83,9 @@ public class BookController {
     Assistant caseAssistant = userAssistants.get(caseName);
     if(caseAssistant == null) {
       InMemoryEmbeddingStore<TextSegment> embedding = InMemoryEmbeddingStore.fromFile("embeddings/" + year + "/" + caseName + ".store");
+      System.out.println(apiKey);
       ChatLanguageModel chatModel = OpenAiChatModel.builder()
-              .apiKey("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")
+              .apiKey(apiKey)
               .modelName(OpenAiChatModelName.GPT_4_O_MINI)
               .build();
       Assistant assistant = AiServices.builder(Assistant.class)
