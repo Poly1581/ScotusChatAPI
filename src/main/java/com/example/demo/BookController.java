@@ -1,6 +1,7 @@
 package com.example.demo;
 import java.io.File;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Paths;
 import java.util.*;
 
@@ -75,27 +76,31 @@ public class BookController {
   @ResponseBody
   @CrossOrigin(origins = "*")
   public String chat(@RequestParam String userName, @RequestParam int year, @RequestParam String caseName, @RequestParam String userMessage) {
-    Map<String, Assistant> userAssistants = assistants.get(userName);
-    if(userAssistants == null) {
-      assistants.put(userName, new HashMap<>());
-      userAssistants = assistants.get(userName);
+    try {
+      Map<String, Assistant> userAssistants = assistants.get(userName);
+      if (userAssistants == null) {
+        assistants.put(userName, new HashMap<>());
+        userAssistants = assistants.get(userName);
+      }
+      Assistant caseAssistant = userAssistants.get(caseName);
+      if (caseAssistant == null) {
+        InMemoryEmbeddingStore<TextSegment> embedding = InMemoryEmbeddingStore.fromFile("embeddings/" + year + "/" + caseName + ".store");
+        ChatLanguageModel chatModel = OpenAiChatModel.builder()
+                .apiKey(apiKey)
+                .modelName(OpenAiChatModelName.GPT_4_O_MINI)
+                .build();
+        Assistant assistant = AiServices.builder(Assistant.class)
+                .chatLanguageModel(chatModel)
+                .chatMemory(MessageWindowChatMemory.withMaxMessages(10))
+                .contentRetriever(EmbeddingStoreContentRetriever.from(embedding))
+                .build();
+        userAssistants.put(caseName, assistant);
+        caseAssistant = userAssistants.get(caseName);
+      }
+      return caseAssistant.chat(userMessage);
+    } catch (Exception e) {
+      System.out.println(e.getMessage());
+      return "Error getting file.";
     }
-    Assistant caseAssistant = userAssistants.get(caseName);
-    if(caseAssistant == null) {
-      InMemoryEmbeddingStore<TextSegment> embedding = InMemoryEmbeddingStore.fromFile("embeddings/" + year + "/" + caseName + ".store");
-      System.out.println(apiKey);
-      ChatLanguageModel chatModel = OpenAiChatModel.builder()
-              .apiKey(apiKey)
-              .modelName(OpenAiChatModelName.GPT_4_O_MINI)
-              .build();
-      Assistant assistant = AiServices.builder(Assistant.class)
-              .chatLanguageModel(chatModel)
-              .chatMemory(MessageWindowChatMemory.withMaxMessages(10))
-              .contentRetriever(EmbeddingStoreContentRetriever.from(embedding))
-              .build();
-      userAssistants.put(caseName, assistant);
-      caseAssistant = userAssistants.get(caseName);
-    }
-    return caseAssistant.chat(userMessage);
   }
 }
