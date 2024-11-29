@@ -1,0 +1,7 @@
+runtime: java17
+instance_class: F1
+service: backend
+resources:
+  memory_gb: 2.0
+env_variables:
+  JAVA_TOOL_OPTIONS: "-Xmx4g -Xms2g"
