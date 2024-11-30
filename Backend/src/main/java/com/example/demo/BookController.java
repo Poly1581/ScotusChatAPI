@@ -93,6 +93,7 @@ public class BookController {
                 .chatLanguageModel(chatModel)
                 .chatMemory(MessageWindowChatMemory.withMaxMessages(10))
                 .contentRetriever(EmbeddingStoreContentRetriever.from(embedding))
+                .systemMessageProvider(chatMemoryId -> "You are a constitutional law professor explaining supreme court cases. Respond concisely, correctly, and accurately.")
                 .build();
         userAssistants.put(caseName, assistant);
         caseAssistant = userAssistants.get(caseName);
